@@ -94,7 +94,7 @@ def feature(df):
         # r'(cli|ili|depressed|worried_finances|anxious|hh_cmnty_cli|nohh_cmnty_cli|large_event|public_transit)')
         r"(tested_positive)")
     for i in df.columns:
-        if pattern.match(i) == None:
+        if pattern.search(i) == None:
             df.drop(columns=i, inplace=True)
     df.drop(columns=['tested_positive'], inplace=True)
     df.drop(columns=['tested_positive.1'], inplace=True)
@@ -103,7 +103,7 @@ def feature(df):
 
 
 config = {'test_size': 0.3, 'L2': 0, 'momentum': 0.8,
-          'epoch': 1500, 'batch_size': 32, 'lr': 1e-6}
+          'epoch': 100, 'batch_size': 200, 'lr': 1e-6}
 
 device = 'cuda' if T.cuda.is_available() else 'cpu'
 traindf = pd.read_csv(
@@ -114,11 +114,14 @@ traindf = feature(traindf)
 traindata = T.FloatTensor(traindf.values)
 x_train, x_valid, y_train, y_valid = train_test_split(
     traindata[:, :-1], traindata[:, -1], test_size=config['test_size'])
-train = CovidData(x_train, y_train)
-valid = CovidData(x_valid, y_valid)
-
-model = training(train, valid, x_train.shape[1], device, config['L2'], config['momentum'], epoch=config['epoch'],
-                 batch_size=config['batch_size'], lr=config['lr'])
+train = CovidData(x_train[:10], y_train[:10])
+valid = CovidData(x_valid[:10], y_valid[:10])
+train_loader = DataLoader(
+    train, batch_size=config['batch_size'], shuffle=True, pin_memory=True)
+valid_loader = DataLoader(
+    valid, batch_size=config['batch_size'], shuffle=True, pin_memory=True)
+# model = training(train_loader, valid_loader, x_train.shape[1], device, config['L2'], config['momentum'], epoch=config['epoch'],
+#                 batch_size=config['batch_size'], lr=config['lr'])
 
 # %%
 testdf = pd.read_csv(
